@@ -16,28 +16,4 @@ class UserModel {
     this.points = 0,
     this.squadId,
   });
-
-  factory UserModel.fromJson(Map<String, dynamic> json) {
-    return UserModel(
-      id: json['id'].toString(),
-      name: json['name'] ?? '',
-      email: json['email'] ?? '',
-      department: json['department'],
-      hostel: json['hostel'],
-      points: json['points'] ?? 0,
-      squadId: json['squadId']?.toString(),
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'name': name,
-      'email': email,
-      'department': department,
-      'hostel': hostel,
-      'points': points,
-      'squadId': squadId,
-    };
-  }
 }

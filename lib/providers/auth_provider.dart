@@ -9,14 +9,10 @@ class AuthProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get isLoggedIn => _currentUser != null;
 
-  // MOCK login — replace with real API call once backend is ready
   Future<bool> login(String email, String password) async {
     _isLoading = true;
     notifyListeners();
-
-    await Future.delayed(const Duration(seconds: 1)); // simulate network call
-
-    // fake success for now
+    await Future.delayed(const Duration(milliseconds: 800));
     _currentUser = UserModel(
       id: '1',
       name: 'Test Student',
@@ -24,11 +20,25 @@ class AuthProvider extends ChangeNotifier {
       department: 'CSE',
       hostel: 'Hostel A',
       points: 120,
+      squadId: 'sq1',
     );
-
     _isLoading = false;
     notifyListeners();
     return true;
+  }
+
+  void addPoints(int points) {
+    if (_currentUser == null) return;
+    _currentUser = UserModel(
+      id: _currentUser!.id,
+      name: _currentUser!.name,
+      email: _currentUser!.email,
+      department: _currentUser!.department,
+      hostel: _currentUser!.hostel,
+      points: _currentUser!.points + points,
+      squadId: _currentUser!.squadId,
+    );
+    notifyListeners();
   }
 
   void logout() {
