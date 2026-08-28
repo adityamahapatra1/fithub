@@ -5,6 +5,7 @@ import '../../models/rep_count_result_model.dart';
 import '../../services/pose_detection_service.dart';
 import '../../services/rep_counter_service.dart';
 import '../../widgets/camera_overlay_painter.dart';
+import 'dart:io';
 
 class RepCounterScreen extends StatefulWidget {
   final ExerciseType exerciseType;
@@ -43,6 +44,9 @@ class _RepCounterScreenState extends State<RepCounterScreen> {
         frontCamera,
         ResolutionPreset.medium,
         enableAudio: false,
+        imageFormatGroup: Platform.isAndroid
+            ? ImageFormatGroup.nv21
+            : ImageFormatGroup.bgra8888,
       );
 
       await _controller!.initialize();
