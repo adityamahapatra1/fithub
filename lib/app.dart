@@ -5,8 +5,7 @@ import 'providers/squad_provider.dart';
 import 'providers/leaderboard_provider.dart';
 import 'providers/workout_provider.dart';
 import 'providers/pose_provider.dart';
-import 'screens/auth/login_screen.dart';
-
+import 'screens/splash/splash_screen.dart';
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -24,7 +23,7 @@ class MyApp extends StatelessWidget {
         title: 'Fitness Squad',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(primarySwatch: Colors.deepPurple, useMaterial3: true),
-        home: const LoginScreen(),
+        home: const SplashScreen(),
       ),
     );
   }
