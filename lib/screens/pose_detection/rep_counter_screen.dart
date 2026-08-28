@@ -6,6 +6,7 @@ import '../../models/rep_count_result_model.dart';
 import '../../models/rep_record_model.dart';
 import '../../services/pose_detection_service.dart';
 import '../../services/rep_counter_service.dart';
+import '../../utils/angle_calculator.dart';
 import '../../widgets/camera_overlay_painter.dart';
 import '../../widgets/form_score_gauge.dart';
 import '../../widgets/score_sparkline.dart';
@@ -26,6 +27,7 @@ class _RepCounterScreenState extends State<RepCounterScreen> {
   Pose? _currentPose;
   RepCountResult? _result;
   bool _initializing = true;
+  bool _bodyReady = false;
   String? _error;
 
   // Session-only state — exists purely in memory, never persisted, gone on dispose
@@ -43,13 +45,13 @@ class _RepCounterScreenState extends State<RepCounterScreen> {
   Future<void> _initCamera() async {
     try {
       final cameras = await availableCameras();
-      final frontCamera = cameras.firstWhere(
-            (c) => c.lensDirection == CameraLensDirection.front,
+      final camera = cameras.firstWhere(
+            (c) => c.lensDirection == CameraLensDirection.back,
         orElse: () => cameras.first,
       );
 
       _controller = CameraController(
-        frontCamera,
+        camera,
         ResolutionPreset.medium,
         enableAudio: false,
         imageFormatGroup: Platform.isAndroid ? ImageFormatGroup.nv21 : ImageFormatGroup.bgra8888,
@@ -62,18 +64,24 @@ class _RepCounterScreenState extends State<RepCounterScreen> {
         if (_poseService.isBusy) return;
         _poseService.isBusy = true;
         try {
-          final poses = await _poseService.detectPose(image, frontCamera);
+          final poses = await _poseService.detectPose(image, camera);
           if (poses.isNotEmpty) {
             final pose = poses.first;
+            final isSquat = widget.exerciseType == ExerciseType.squat;
+            final bodyReady = AngleCalculator.isBodyReadyFor(pose, isSquat: isSquat);
             final result = _repCounter.processPose(pose);
-            if (mounted && result != null) {
+
+            if (mounted) {
               setState(() {
                 _currentPose = pose;
-                _result = result;
-                if (result.completedRep != null) {
-                  _history.add(result.completedRep!);
-                  _latestFormScore = result.completedRep!.formScore;
-                  _latestFeedback = result.completedRep!.feedback;
+                _bodyReady = bodyReady;
+                if (result != null) {
+                  _result = result;
+                  if (result.completedRep != null) {
+                    _history.add(result.completedRep!);
+                    _latestFormScore = result.completedRep!.formScore;
+                    _latestFeedback = result.completedRep!.feedback;
+                  }
                 }
               });
             }
@@ -132,7 +140,7 @@ class _RepCounterScreenState extends State<RepCounterScreen> {
           ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(color: Colors.green.withOpacity(0.15), borderRadius: BorderRadius.circular(20)),
+            decoration: BoxDecoration(color: Colors.green.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(20)),
             child: const Row(mainAxisSize: MainAxisSize.min, children: [
               Icon(Icons.circle, size: 8, color: Colors.greenAccent),
               SizedBox(width: 6),
@@ -158,6 +166,11 @@ class _RepCounterScreenState extends State<RepCounterScreen> {
           CameraPreview(_controller!),
           if (_currentPose != null)
             CustomPaint(painter: PosePainter(_currentPose!, Size(_controller!.value.previewSize!.height, _controller!.value.previewSize!.width))),
+          if (_currentPose != null && !_bodyReady)
+            Positioned(
+              top: 50, left: 12, right: 12,
+              child: _pill('⚠ Step back — full body not in frame', Colors.orangeAccent, fullWidth: true),
+            ),
           Positioned(top: 12, left: 12, child: _pill('STATE: ${_result?.stage.name.toUpperCase() ?? '-'}', _stateColor)),
           Positioned(top: 12, right: 12, child: _pill('REPS: ${_result?.repCount ?? 0}', Colors.white)),
           if (_result?.formMessage != null)
@@ -172,7 +185,7 @@ class _RepCounterScreenState extends State<RepCounterScreen> {
       width: fullWidth ? double.infinity : null,
       alignment: Alignment.center,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(12), border: Border.all(color: color.withOpacity(0.6))),
+      decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(12), border: Border.all(color: color.withValues(alpha: 0.6))),
       child: Text(text, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold)),
     );
   }
@@ -219,7 +232,7 @@ class _RepCounterScreenState extends State<RepCounterScreen> {
                   final color = r.valid ? Colors.greenAccent : Colors.redAccent;
                   return Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(10), border: Border.all(color: color.withOpacity(0.4))),
+                    decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10), border: Border.all(color: color.withValues(alpha: 0.4))),
                     child: Row(mainAxisSize: MainAxisSize.min, children: [
                       Text('#${r.repNumber}', style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 12)),
                       const SizedBox(width: 6),
@@ -246,7 +259,7 @@ class _RepCounterScreenState extends State<RepCounterScreen> {
 
   Widget _statBlock(String value, String label, IconData icon, Color color) {
     return Row(children: [
-      Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: color.withOpacity(0.15), shape: BoxShape.circle), child: Icon(icon, color: color, size: 20)),
+      Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: color.withValues(alpha: 0.15), shape: BoxShape.circle), child: Icon(icon, color: color, size: 20)),
       const SizedBox(width: 10),
       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(value, style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),

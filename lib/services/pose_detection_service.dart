@@ -8,16 +8,13 @@ class PoseDetectionService {
     options: PoseDetectorOptions(mode: PoseDetectionMode.stream),
   );
 
-  bool _isBusy = false;
+  bool isBusy = false;
 
   Future<List<Pose>> detectPose(CameraImage image, CameraDescription camera) async {
     final inputImage = _inputImageFromCameraImage(image, camera);
     if (inputImage == null) return [];
     return await _poseDetector.processImage(inputImage);
   }
-
-  bool get isBusy => _isBusy;
-  set isBusy(bool value) => _isBusy = value;
 
   InputImage? _inputImageFromCameraImage(CameraImage image, CameraDescription camera) {
     final sensorOrientation = camera.sensorOrientation;
